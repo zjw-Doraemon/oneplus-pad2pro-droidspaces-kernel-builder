@@ -372,6 +372,8 @@ if [[ "$APPLY_BBG" == "y" || "$APPLY_BBG" == "Y" ]]; then
   curl -sSL https://github.com/cctv18/Baseband-guard/raw/master/setup.sh | bash
   sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
   cd ..
+else
+  echo "CONFIG_BBG=n" >> "$DEFCONFIG_FILE"
 fi
 
 # ===== 禁用 defconfig 检查 =====
