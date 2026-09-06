@@ -227,6 +227,12 @@ fi
 echo "CONFIG_TMPFS_XATTR=y" >> "$DEFCONFIG_FILE"
 echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$DEFCONFIG_FILE"
 
+# 启用内核态 NTFS3，并提供 VHDX/qemu-nbd 所需的 NBD 块设备后端
+echo "CONFIG_NTFS3_FS=y" >> "$DEFCONFIG_FILE"
+echo "CONFIG_NTFS3_LZX_XPRESS=y" >> "$DEFCONFIG_FILE"
+echo "CONFIG_NTFS3_FS_POSIX_ACL=y" >> "$DEFCONFIG_FILE"
+echo "CONFIG_BLK_DEV_NBD=y" >> "$DEFCONFIG_FILE"
+
 # 开启O2编译优化配置
 echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> "$DEFCONFIG_FILE"
 #跳过将uapi标准头安装到 usr/include 目录的不必要操作，节省编译时间
