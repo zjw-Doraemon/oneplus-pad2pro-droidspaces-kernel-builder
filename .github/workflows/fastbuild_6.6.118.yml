@@ -95,6 +95,11 @@ on:
         required: false
         type: string
         default: ''
+      docker_full_support:
+        description: '是否启用完整Docker支持(OverlayFS存储、Bridge网络、完整Cgroup控制)'
+        required: true
+        type: boolean
+        default: 'false'
 
 jobs:
   build:
@@ -524,6 +529,63 @@ jobs:
             fi
           fi
 
+      - name: 启用完整 Docker 支持
+        if: inputs.docker_full_support
+        run: |
+          echo "正在添加完整 Docker 内核支持..."
+          cd kernel_workspace/common
+
+          # 1. OverlayFS 存储驱动 (最关键)
+          echo "CONFIG_OVERLAY_FS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OVERLAY_FS_REDIRECT_ALWAYS_FOLLOW=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OVERLAY_FS_INDEX=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OVERLAY_FS_XINO_AUTO=y" >> ./arch/arm64/configs/gki_defconfig
+
+          # 2. 网络功能 (使用模块以避免 VINTF 兼容性问题)
+          echo "CONFIG_BRIDGE=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BRIDGE_NETFILTER=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BRIDGE_VLAN_FILTERING=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_VETH=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_VXLAN=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MACVLAN=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IPVLAN=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DUMMY=m" >> ./arch/arm64/configs/gki_defconfig
+
+          # 3. NAT 和路由
+          echo "CONFIG_IP_NF_NAT=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP_NF_TARGET_MASQUERADE=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_NAT=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_TARGET_MASQUERADE=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NETFILTER_XT_TARGET_REDIRECT=m" >> ./arch/arm64/configs/gki_defconfig
+
+          # 4. Cgroup 资源控制 (内置)
+          echo "CONFIG_CGROUP_DEVICE=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_PIDS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_FREEZER=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_HUGETLB=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_PERF=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_BPF=y" >> ./arch/arm64/configs/gki_defconfig
+
+          # 5. 命名空间 (补充)
+          echo "CONFIG_NET_NS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_UTS_NS=y" >> ./arch/arm64/configs/gki_defconfig
+
+          # 6. 高级网络
+          echo "CONFIG_VLAN_8021Q=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP_ADVANCED_ROUTER=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP_MULTIPLE_TABLES=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_SCHED=y" >> ./arch/arm64/configs/gki_defconfig
+
+          # 7. NF_TABLES (现代 iptables)
+          echo "CONFIG_NF_TABLES=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NF_TABLES_IPV4=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NF_TABLES_IPV6=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NFT_NAT=m" >> ./arch/arm64/configs/gki_defconfig
+
+          echo "完整 Docker 内核配置添加完成！"
+
       - name: 启用ADIOS IO调度器
         if: inputs.adios_enable
         run: |
@@ -738,6 +800,7 @@ jobs:
           echo "IPset: ${{ github.event.inputs.better_net }}" >> ./ak3.log
           echo "BBR&Brutal: ${{ github.event.inputs.bbr_enable }}" >> ./ak3.log
           echo "Droidspaces: ${{ github.event.inputs.droidspaces_enable }}" >> ./ak3.log
+          echo "Docker: ${{ github.event.inputs.docker_full_support }}" >> ./ak3.log
           echo "ADIOS: ${{ github.event.inputs.adios_enable }}" >> ./ak3.log
           echo "Re-Kernel: ${{ github.event.inputs.rekernel_enable }}" >> ./ak3.log
           echo "BBG: ${{ github.event.inputs.baseband_guard }}" >> ./ak3.log
@@ -821,6 +884,7 @@ jobs:
           - 网络功能增强：${{ github.event.inputs.better_net }}
           - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
           - Droidspaces 容器支持：${{ github.event.inputs.droidspaces_enable }}
+          - 完整Docker支持：${{ github.event.inputs.docker_full_support }}
           - ADIOS IO调度器支持：${{ github.event.inputs.adios_enable }}
           - Re-Kernel支持：${{ github.event.inputs.rekernel_enable }}
           - 内核级基带保护支持：${{ github.event.inputs.baseband_guard }}
