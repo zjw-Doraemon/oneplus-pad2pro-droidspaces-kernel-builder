@@ -113,6 +113,8 @@ jobs:
       contents: read
     steps:
       - name: 安装环境依赖+初始化源码仓库及llvm-Clang18工具链
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           sudo apt-get update
