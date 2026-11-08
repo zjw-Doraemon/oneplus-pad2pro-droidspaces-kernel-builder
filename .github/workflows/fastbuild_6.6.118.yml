@@ -130,7 +130,7 @@ jobs:
           #sudo apt-get install -y --no-install-recommends curl bison flex make binutils git perl gcc python3 python-is-python3 bc libssl-dev libelf-dev zip unzip ccache
           
           #使用最新版ccache-ECS（特化优化内核编译缓存，大幅提升二次不同配置编译速度）
-          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/ccache-x86-64 -O ccache &&
+          wget https://github.com/$GITHUB_REPOSITORY/raw/10071c4dc4a2919e81bdbec6924b7c15ec545127/lib/ccache-x86-64 -O ccache &&
           sudo cp -f ./ccache /usr/bin/ccache &&
           sudo chmod +x /usr/bin/ccache &&
           rm -f ./ccache &
@@ -673,8 +673,8 @@ jobs:
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
-          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/libfakestat.so
-          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/libfaketimeMT.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/10071c4dc4a2919e81bdbec6924b7c15ec545127/lib/libfakestat.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/10071c4dc4a2919e81bdbec6924b7c15ec545127/lib/libfaketimeMT.so
           chmod 777 ./*.so
           export FAKESTAT="2025-05-25 12:00:00"
           export FAKETIME="@2025-05-25 13:00:00"
