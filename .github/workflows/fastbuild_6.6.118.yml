@@ -826,3 +826,9 @@ jobs:
           path: ${{ github.workspace }}/kernel_workspace/AnyKernel*.zip
           archive: false
 
+      - name: 上传实际内核配置
+        uses: actions/upload-artifact@v7
+        with:
+          name: pad2pro-cpu-pids-config
+          path: ${{ github.workspace }}/kernel_workspace/common/out/.config
+          include-hidden-files: true
