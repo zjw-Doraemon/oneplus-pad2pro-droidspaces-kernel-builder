@@ -1,4 +1,4 @@
-name: Pad2Pro both-controllers-off baseline build
+name: Pad2Pro CPU-only control build
 
 env:
   TZ: Asia/Shanghai
@@ -508,7 +508,7 @@ jobs:
             #echo "CONFIG_BRIDGE_NETFILTER=y" >> ./arch/arm64/configs/gki_defconfig
             #echo "CONFIG_NF_TABLES=y" >> ./arch/arm64/configs/gki_defconfig
             # DroidSpaces CPU quota and process-count limits (built in).
-            ./scripts/config --file arch/arm64/configs/gki_defconfig -d CFS_BANDWIDTH -d CGROUP_PIDS
+            ./scripts/config --file arch/arm64/configs/gki_defconfig -e CFS_BANDWIDTH -d CGROUP_PIDS
             # 开启 NTSync
             echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/gki_defconfig
             if [[ "${{ github.event.inputs.droidspaces_enable }}" == "extend" ]]; then
@@ -705,7 +705,7 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
           if [[ "${{ github.event.inputs.droidspaces_enable }}" != "false" ]]; then
-            grep -qx '# CONFIG_CFS_BANDWIDTH is not set' out/.config
+            grep -qx 'CONFIG_CFS_BANDWIDTH=y' out/.config
             grep -qx '# CONFIG_CGROUP_PIDS is not set' out/.config
           fi
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
