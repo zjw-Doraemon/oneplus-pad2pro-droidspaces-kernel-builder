@@ -129,7 +129,8 @@ jobs:
           unzip -q clang.zip -d clang18
           sha256sum clang.zip > toolchain-sha256.txt
           rm clang.zip
-          fetch https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang18-r510928/build-tools.zip build-tools.zip
+          gh api -H "Accept: application/octet-stream" repos/cctv18/oneplus_sm8650_toolchain/releases/assets/288531615 > build-tools.zip
+          echo "9a1a48cdbaababdfbbec9bee06198c60eb12369188b0f24428fb790c488d00ec  build-tools.zip" | sha256sum -c -
           unzip -q build-tools.zip
           sha256sum build-tools.zip >> toolchain-sha256.txt
           rm build-tools.zip
