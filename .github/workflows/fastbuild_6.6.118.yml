@@ -1,4 +1,4 @@
-name: 6.6.118 欧加真OKI内核快速构建
+name: Pad2Pro CPU-PIDs pinned baseline rebuild
 
 env:
   TZ: Asia/Shanghai
@@ -6,6 +6,7 @@ env:
   KERNEL_VERSION: '6.6'
   SUB_VERSION: '118'
   KERNEL_NAME: 'android15-8-g29d86c5fc9dd-abogki428889875-4k'
+  CCACHE_DISABLE: '1'
   CCACHE_KEY: ccache-ecsv4-6.6.118
 
 on:
@@ -129,15 +130,15 @@ jobs:
           #sudo apt-get install -y --no-install-recommends curl bison flex make binutils git perl gcc python3 python-is-python3 bc libssl-dev libelf-dev zip unzip ccache
           
           #使用最新版ccache-ECS（特化优化内核编译缓存，大幅提升二次不同配置编译速度）
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/ccache-x86-64 -O ccache &&
+          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/ccache-x86-64 -O ccache &&
           sudo cp -f ./ccache /usr/bin/ccache &&
           sudo chmod +x /usr/bin/ccache &&
           rm -f ./ccache &
           
           echo "正在克隆源码仓库..."
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/refs/heads/oneplus/sm8750_b_16.0.0_oneplus_13_6.6.118.zip -o common.zip && 
+          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/2a4726b11594dd57d0779d2685fad5c81e5ed553.zip -o common.zip && 
           unzip -q common.zip && 
-          mv "android_kernel_common_oneplus_sm8750-oneplus-sm8750_b_16.0.0_oneplus_13_6.6.118" common &&
+          mv "android_kernel_common_oneplus_sm8750-2a4726b11594dd57d0779d2685fad5c81e5ed553" common &&
           rm -rf common.zip &
           
           echo "正在克隆llvm-clang18工具链..." &&
@@ -257,9 +258,10 @@ jobs:
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在配置官方 SukiSU Ultra..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s main
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/9fbe8fe8ca90c62c259c5894bf96d02ac31209b9/kernel/setup.sh" | bash -s 9fbe8fe8ca90c62c259c5894bf96d02ac31209b9
             cd ./KernelSU
-            KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
+            test "$(git rev-parse HEAD)" = 9fbe8fe8ca90c62c259c5894bf96d02ac31209b9
+            KSU_VERSION=40901
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
@@ -268,7 +270,8 @@ jobs:
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@cctv18"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
-            KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
+            test "$(git rev-parse HEAD)" = 9fbe8fe8ca90c62c259c5894bf96d02ac31209b9
+            KSU_VERSION=40901
             # 存储版本号到 GitHub 环境变量
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
@@ -285,7 +288,7 @@ jobs:
             sed -i "s/KSU_VERSION_TAG_FALLBACK := v0.0.1/KSU_VERSION_TAG_FALLBACK := $KSU_GIT_TAG/g" kernel/Kbuild
             #为KernelSU Next添加WildKSU管理器支持
             cd ../common/drivers/kernelsu
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/apk_sign.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/other_patch/apk_sign.patch
             patch -p2 -N -F 3 < apk_sign.patch || true
           elif [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             echo "正在配置原版 KernelSU (tiann/KernelSU)..."
@@ -305,8 +308,11 @@ jobs:
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} != "none" ]]; then
             echo "正在添加susfs补丁..."
-            git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
+            git init susfs4ksu
+            git -C susfs4ksu remote add origin https://github.com/cctv18/susfs4oki.git
+            git -C susfs4ksu fetch --depth=1 origin 40e6c19ec2ca88804d6c2e3ddf52623af6685463
+            git -C susfs4ksu checkout --detach FETCH_HEAD
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
@@ -329,7 +335,10 @@ jobs:
         run: |
           echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
           cd kernel_workspace
-          git clone --depth=1 https://github.com/$GITHUB_REPOSITORY.git -b $GITHUB_REF_NAME $GITHUB_ACTOR
+          git init "$GITHUB_ACTOR"
+          git -C "$GITHUB_ACTOR" remote add origin https://github.com/$GITHUB_REPOSITORY.git
+          git -C "$GITHUB_ACTOR" fetch --depth=1 origin 9b3f2751bd2b4e9dc7612cedb27bee4461e34686
+          git -C "$GITHUB_ACTOR" checkout --detach FETCH_HEAD
           cp ./$GITHUB_ACTOR/zram_patch/001-lz4.patch ./common/
           cp ./$GITHUB_ACTOR/zram_patch/lz4armv8.S ./common/lib
           cp ./$GITHUB_ACTOR/zram_patch/002-zstd.patch ./common/
@@ -402,7 +411,7 @@ jobs:
           echo "CONFIG_HEADERS_INSTALL=n" >> ./common/arch/arm64/configs/gki_defconfig
           # 应用 CVE_2026_43499 修复补丁
           cd common
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/cve-2026-43499-rtmutex-6.6.patch
+          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/other_patch/cve-2026-43499-rtmutex-6.6.patch
           patch -p1 -F 3 < cve-2026-43499-rtmutex-6.6.patch
           
       - name: 启用网络功能增强优化配置
@@ -438,7 +447,7 @@ jobs:
           echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
           #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
           cd common
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/config.patch
+          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
 
       - name: 添加 BBR 等一系列拥塞控制算法
@@ -487,14 +496,14 @@ jobs:
             echo "正在启用 Droidspaces 容器支持..."
             cd kernel_workspace/common
             # 应用 Droidspaces 容器必须补丁
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/fix_sysvipc_kabi_6_7_8.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/droidspaces_patch/fix_sysvipc_kabi_6_7_8.patch
             patch -p1 -F 3 < fix_sysvipc_kabi_6_7_8.patch || true
             # 修补 oplus_bsp_midas 行为，避免开机崩溃
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/fix_oplus_bsp_midas.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/droidspaces_patch/fix_oplus_bsp_midas.patch
             patch -p1 -F 3 < fix_oplus_bsp_midas.patch || true
             # 应用 NTSync 补丁
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/ntsync_base.patch
-            wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/ntsync_compat_${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/droidspaces_patch/ntsync_base.patch
+            wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/droidspaces_patch/ntsync_compat_${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
             patch -p1 -F 3 < ntsync_base.patch || true
             patch -p1 -F 3 < ntsync_compat_${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             # 开启 Droidspaces 容器所需内核支持
@@ -525,7 +534,7 @@ jobs:
               # 开启 systemd-coredump 支持
               echo "CONFIG_STATIC_USERMODEHELPER=n" >> ./arch/arm64/configs/gki_defconfig
               # 添加 Lindroid EVDI DRM 驱动
-              wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/evdi_drm.patch
+              wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/droidspaces_patch/evdi_drm.patch
               patch -p1 -F 3 < evdi_drm.patch || true
               echo "CONFIG_DRM_LINDROID_EVDI=y" >> ./arch/arm64/configs/gki_defconfig
             fi
@@ -664,8 +673,8 @@ jobs:
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfakestat.so
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfaketimeMT.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/libfakestat.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/9b3f2751bd2b4e9dc7612cedb27bee4461e34686/lib/libfaketimeMT.so
           chmod 777 ./*.so
           export FAKESTAT="2025-05-25 12:00:00"
           export FAKETIME="@2025-05-25 13:00:00"
@@ -746,11 +755,31 @@ jobs:
           rm -f Image
           mv oImage Image
           
+      - name: Record pinned dependency provenance
+        run: |
+          mkdir -p build-audit
+          printf '%s\n' 'Kernel=2a4726b11594dd57d0779d2685fad5c81e5ed553 (historical candidate by timestamp)' 'SukiSU=9fbe8fe8ca90c62c259c5894bf96d02ac31209b9 (verified old build log)' 'SUSFS=40e6c19ec2ca88804d6c2e3ddf52623af6685463 (historical candidate by timestamp)' 'AnyKernel3=091ee586e1a5d5c1c1c957d48fe7c61638d04dc4 (historical candidate by timestamp)' > build-audit/provenance.txt
+          git -C kernel_workspace/KernelSU rev-parse HEAD >> build-audit/provenance.txt
+          git -C kernel_workspace/susfs4ksu rev-parse HEAD >> build-audit/provenance.txt
+          cp kernel_workspace/common/out/.config build-audit/kernel.config
+          cp kernel_workspace/common/kernel/sched/sched.h build-audit/sched.h
+          sha256sum kernel_workspace/common/out/arch/arm64/boot/Image >> build-audit/provenance.txt
+          kernel_workspace/clang18/bin/clang --version >> build-audit/provenance.txt
+          # Static success cannot prove compatibility with proprietary scheduler modules.
+      - name: Upload build audit
+        uses: actions/upload-artifact@v7
+        with:
+          name: pad2pro-pinned-build-audit
+          path: build-audit/
+
       - name: 克隆 AnyKernel3 并打包
         id: create_zip
         run: |
           cd kernel_workspace
-          git clone https://github.com/cctv18/AnyKernel3 --depth=1
+          git init AnyKernel3
+          git -C AnyKernel3 remote add origin https://github.com/cctv18/AnyKernel3
+          git -C AnyKernel3 fetch --depth=1 origin 091ee586e1a5d5c1c1c957d48fe7c61638d04dc4
+          git -C AnyKernel3 checkout --detach FETCH_HEAD
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
           cp ../common/out/arch/arm64/boot/Image ./Image
