@@ -120,12 +120,13 @@ jobs:
           mkdir -p kernel_workspace
           cd kernel_workspace
           fetch() { curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --connect-timeout 30 "$1" -o "$2"; }
-          fetch https://github.com/cctv18/android_kernel_common_oneplus_sm8750/archive/2a4726b11594dd57d0779d2685fad5c81e5ed553.zip common.zip
+          fetch https://codeload.github.com/cctv18/android_kernel_common_oneplus_sm8750/zip/2a4726b11594dd57d0779d2685fad5c81e5ed553 common.zip
           unzip -q common.zip
           mv android_kernel_common_oneplus_sm8750-2a4726b11594dd57d0779d2685fad5c81e5ed553 common
           rm common.zip
           mkdir clang18
-          fetch https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang18-r510928/clang-r510928.zip clang.zip
+          gh api -H "Accept: application/octet-stream" repos/cctv18/oneplus_sm8650_toolchain/releases/assets/288531697 > clang.zip
+          echo "1221635c13d02c5f0c8abb93f38f5d43f5e2f86906ae2e18894ce63e90264164  clang.zip" | sha256sum -c -
           unzip -q clang.zip -d clang18
           sha256sum clang.zip > toolchain-sha256.txt
           rm clang.zip
