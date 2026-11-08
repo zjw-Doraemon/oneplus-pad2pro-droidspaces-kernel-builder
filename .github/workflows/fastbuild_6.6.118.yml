@@ -1,4 +1,4 @@
-name: Pad2Pro PIDs-only ABI control build
+name: Pad2Pro both-controllers-off baseline build
 
 env:
   TZ: Asia/Shanghai
@@ -508,7 +508,7 @@ jobs:
             #echo "CONFIG_BRIDGE_NETFILTER=y" >> ./arch/arm64/configs/gki_defconfig
             #echo "CONFIG_NF_TABLES=y" >> ./arch/arm64/configs/gki_defconfig
             # DroidSpaces CPU quota and process-count limits (built in).
-            ./scripts/config --file arch/arm64/configs/gki_defconfig -d CFS_BANDWIDTH -e CGROUP_PIDS
+            ./scripts/config --file arch/arm64/configs/gki_defconfig -d CFS_BANDWIDTH -d CGROUP_PIDS
             # 开启 NTSync
             echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/gki_defconfig
             if [[ "${{ github.event.inputs.droidspaces_enable }}" == "extend" ]]; then
@@ -706,7 +706,7 @@ jobs:
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
           if [[ "${{ github.event.inputs.droidspaces_enable }}" != "false" ]]; then
             grep -qx '# CONFIG_CFS_BANDWIDTH is not set' out/.config
-            grep -qx 'CONFIG_CGROUP_PIDS=y' out/.config
+            grep -qx '# CONFIG_CGROUP_PIDS is not set' out/.config
           fi
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
           
@@ -746,6 +746,7 @@ jobs:
           git -C kernel_workspace/KernelSU rev-parse HEAD >> build-audit/provenance.txt
           git -C kernel_workspace/susfs4ksu rev-parse HEAD >> build-audit/provenance.txt
           cp kernel_workspace/common/out/.config build-audit/kernel.config
+          cp kernel_workspace/common/out/Module.symvers build-audit/Module.symvers
           cp kernel_workspace/common/kernel/sched/sched.h build-audit/sched.h
           sha256sum kernel_workspace/common/out/arch/arm64/boot/Image >> build-audit/provenance.txt
           kernel_workspace/clang18/bin/clang --version >> build-audit/provenance.txt
